@@ -1,0 +1,1281 @@
+---
+title: "Factors that influence labor participation in 1976"
+author: "Xiao Tan, section K3"
+date: "3/28/2020"
+output:
+  html_document:
+    toc: yes
+  pdf_document:
+    toc: yes
+---
+
+
+***
+\pagebreak
+
+
+# Introduction 
+
+This project is to explore the factors that influence labor participation in 1976, based on factors such as hours, age, kids, education, income, tax, college attendance in the family. We conducted this project to explore which factor would contribute most to the participaion of labor in 1976, especially for the wives and family issues. 
+The variables I choose are more focused on wives and family factors. And here are some of my pre-analysis of the correlation between factors and labor participation, especially for the wives.
+
+Education might be related to the labor force for several reasons. Firstly, people with more education will be more competitive in the labor market, so they are more likely to get a job. Also, people with more education have a higher payment, which will further attract them to join the labor market. 
+The effect of age is mixed since it will influence the labor market because the older age might choose to retire, while the older age might have more working experience. 
+Tax will affect the labor market by affecting the incomes. The higher the tax is, the less likely the worker will join the working market.
+The experience will positively affect labor force participation because the more experience they have, it means they are more competitive in the labor market. Also, the experience means they had once joined the labor market and are more likely to stay in the labor market.
+The young kids will negatively affect labor force participation because the young kids require a lot of care and attention, and the daycare and babysitting might be expensive for some family to afford, so the wives are more likely to stay at home to take care of young kids.
+
+###  Introduction of the dataset:
+
+This dataset is the Labor Force Participation Data, which is cross-section data originating from the 1976 Panel Study of Income Dynamics (PSID), based on data for the previous year, 1975. This data set is also known as the Mroz (1987) data.
+
+**Source of the data:**
+Online complements to Greene (2003). Table F4.1.
+http://pages.stern.nyu.edu/~wgreene/Text/tables/tablelist5.htm
+
+**References:**
+Greene, W.H. (2003). Econometric Analysis, 5th edition. Upper Saddle River, NJ: Prentice Hall.
+McCullough, B.D. (2004). Some Details of Nonlinear Estimation. In: Altman, M., Gill, J., and
+McDonald, M.P.: Numerical Issues in Statistical Computing for the Social Scientist. Hoboken, NJ:
+John Wiley, Ch. 8, 199–218.
+Mroz, T.A. (1987). The Sensitivity of an Empirical Model of Married Women’s Hours of Work to
+Economic and Statistical Assumptions. Econometrica, 55, 765–799.
+Winkelmann, R., and Boes, S. (2009). Analysis of Microdata, 2nd ed. Berlin and Heidelberg:
+Springer-Verlag.
+Wooldridge, J.M. (2002). Econometric Analysis of Cross-Section and Panel Data. Cambridge, MA:
+MIT Press.
+
+
+### Introduction of Variables:
+
+**Y outcome**: 
+**participation**:  Did the individual participate in the labor force in 1975? (This is essentially wage > 0 or hours > 0.) The participation is a binary variable, with yes and no for answers.
+
+**X: factors**:
+
+In our project, we choose the education, age, tax, experience, youngkids for main discussion.
+
+  **education**: Wife’s education in years.
+  
+  **age**: Wife’s age in years.
+  
+  **wage**: Wife’s average hourly wage, in 1975 dollars.
+
+  **tax**: Marginal tax rate facing the wife, and is taken from published federal tax tables (state and local
+  
+  **experience**: Actual years of wife’s previous labor market experience.
+  
+  **youngkids**: Number of children less than 6 years old in household.
+  
+We will choose the *education, age, tax, experience*, and *youngkids* as our Xs to explain the Y. 
+We want to analyze the labor force participant for wives, and we think the *education, age, tax experience and youngkids* would be the most influential factors intuitively. 
+
+# Summary Statistics
+
+### Distribution of variables
+
+```{r, message = FALSE}
+#install.packages("AER")
+# find the datset of Labor Force Participation Data
+library(AER)
+data("PSID1976")
+attach(PSID1976)
+```
+
+```{r}
+#education is continuous
+ggplot(PSID1976) +
+  labs(y="Frequency", x="education") +
+  geom_histogram(aes(x=education),binwidth = 1, colour='grey') +
+  ggtitle("Histogram of education: Wife’s education in years.")
+```
+
+*Education* represents the wife’s education in years.
+The mode of education in the dataset is 12 years, which is probably high school graduation. And we have another increase in the frequency of education after that, 16 years, which is college graduation. This variable is similar to college attendance, so we only choose this one rather than bother of them. Also, we can see most of the wives have at least 8 years of education for most of the data points, and there is no data without any education.  
+
+```{r}
+#age is continuous
+ggplot(PSID1976) +
+  labs(y="Frequency", x="age") +
+  geom_histogram(aes(x=age),binwidth = 1, colour='grey') +
+  ggtitle("Histogram of age:  Wife’s age in years.")
+
+```
+
+*Age* here represents the wife’s age in years.
+We can see that most of the data points have at least 30 years and at most 60 years old, and the evenly distributed in this range of 30-50 and a decrease after that. This range is good this age range is after graduation from school and before retirement age. And this is also the normal age for married women. 
+
+```{r}
+#tax is continuous
+ggplot(PSID1976) +
+  labs(y="Frequency", x="tax") +
+  geom_histogram(aes(x=tax),binwidth = 0.05, colour='grey') +
+  ggtitle("Histogram of tax: Marginal tax rate facing the wife")
+
+```
+
+*Tax* here represents the marginal tax rate facing the wife and is taken from published federal tax tables (state and local). 
+Most of the data points have a tax as more than 0.5 and the mode is around 0.7. This is probably the normal marginal tax rate of women in 1976. 
+
+```{r}
+#experience is continuous
+ggplot(PSID1976) +
+  labs(y="Frequency", x="experience") +
+  geom_histogram(aes(x=experience),binwidth = 2, colour='grey') +
+  ggtitle("Histogram of experience: Actual years of wife’s previous labor market experience")
+
+```
+
+*Experience* here represents the actual years of the wife’s previous labor market experience.
+We can see most of the wives have their experience range from 0 to 15 years.  Also, there is a lot of them who have no working experience before. This is also caused by the normal age of working women. 
+
+```{r}
+#youngkids is discrete with the number 0,1,2,3
+ggplot(PSID1976, aes(youngkids))+ 
+  geom_bar() + 
+  labs(y="count")+
+  ggtitle("Histogram of youngkids: Number of children less than 6 years old in household")
+```
+
+*Youngkids* here represent the number of children less than 6 years old in the household. 
+Most of the families in the dataset do not have young kids. And about 150 data points have young kids at home. So the ratio of have young kids and do not have young kids is 4:1.
+
+```{r}
+#wage is continuous  
+ggplot(PSID1976) +
+  labs(y="Frequency", x="wage") +
+  geom_histogram(aes(x=experience),binwidth = 3, colour='grey') +
+  ggtitle("Histogram of wage: Wife’s average hourly wage, in 1975 dollars")
+```
+
+*wage* here represent Wife’s average hourly wage, in 1975 dollars 
+Most of the wifes have the wages around 5 to 15 at 1975, and very few of them have more than 30. 
+
+```{r}
+#Y participation is discrete
+ggplot(PSID1976, aes(as.factor(participation)))+ 
+  geom_bar() + 
+  labs(y="count")+
+  ggtitle("Histogram of participation: Did the individual participate in the labor force in 1975? ")
+
+```
+
+The participation results in our dataset are evenly distributed with a ratio of 7:9, which is close to 1:1. This is to say, the dataset is a fairly reasonable dataset with the output evenly distributed.
+
+### The correlation between Y and each selected X separately. 
+
+The *education, age, city, tax, experience, youngkids* as our Xs to explain the Y. 
+
+```{r}
+ggplot(PSID1976, aes(x=education, y=as.factor(participation))) + 
+  geom_boxplot() +
+  ggtitle("Correlation between participation(Y) and education(X)")
+
+```
+
+From the correlation between *participation* and *education*, we can see with more education, it is more likely to participate in the labor market in 1976. And differences between them are obvious because the 25-75 percentile of those two almost do not have a union. This means there is a strong correlation between *education* and *participation*.
+
+```{r}
+ggplot(PSID1976, aes(x=age, y=as.factor(participation), color = age)) + 
+  geom_boxplot()+
+  ggtitle("Correlation between participation(Y) and age(X)")+
+  labs(
+       color = "age")
+
+```
+
+From the correlation between *participation* and *age*, we can see the younger age wives are more likely to participate in the labor market in 1976, although the differences between those two are not very obvious, which means the age is not a good indicator of labor force participation for wives. This means there is a weak correlation between *age* and *participation*.
+
+```{r}
+ggplot(PSID1976, aes(x=tax, y=as.factor(participation))) + 
+  geom_boxplot() +
+  ggtitle("Correlation between participation(Y) and tax(X)")
+
+```
+
+From the correlation of *participation* and *tax*, we can see with the lower the tax, it is more likely for the wives to participate in the labor market in 1976. This means there is a medium correlation between *tax* and *participation*.
+
+```{r}
+
+ggplot(PSID1976, aes(x=experience, y=as.factor(participation))) + 
+  geom_boxplot() +
+    ggtitle("Correlation between participation(Y) and experience(X)")
+  
+
+```
+
+From the correlation of *participation* and *experience*, we can see with the more experience, it is more likely for the wives to participate in the labor market in 1976. And for those who enter the labor market, seldom with zero working experience, and most of them have more than five years of working experience. This means there is a strong correlation between *experience* and *participation*.
+
+```{r}
+ggplot(PSID1976, aes(x= youngkids, y=as.factor(participation))) + 
+  geom_boxplot() +
+  ggtitle("Correltation between participation(Y) and youngkids(X)")
+
+```
+
+From the correlation of *participation* and *youngkids*, we can see with the existence of young kids, most of the women will not attend the labor market. This means there is a strong correlation between *youngkids* and *participation*.
+
+```{r}
+ggplot(PSID1976, aes(x=wage, y=as.factor(participation))) + 
+  geom_boxplot() +
+    ggtitle("Correlation between participation(Y) and wage(X)")
+  
+```
+
+From the correlation of *participation* and *wage*, we can see with wifes will only attend the labor force market with wages. 
+
+###  Use the pairs to see the correlation between all the X and Ys
+
+In this part, we use the pairs to see the correlation between all the X and Ys
+
+```{r}
+pairs(~ participation + youngkids + experience + tax + age + education, PSID1976)
+
+```
+
+Because our Y(participation) is binary, it is hard to see the linear correlation in this plot, but we can see that age and experience have a strong correlation with each other. Besides that, other factors do not have strong correlations, so we are choosing the most independent variables in this data analysis.
+In conclusion, this is a good dataset to analyze the factors that influence labor participation in 1976. 
+
+
+# Logistic Classification 
+
+### Run different Logistic regressions with the same Y(participation) and compare their accuracy rates.
+
+Firstly, we run the logistic regressions with all the variables above, which is our full model: 
+
+```{r}
+#the logistic regressions with Y(participation) and Xs(education, age, tax, experience, youngkids):
+glm_5x = glm(as.factor(participation)~education+age+experience+tax+youngkids, data = PSID1976, family = binomial)
+summary(glm_5x)
+
+glm.probs= predict(glm_5x, PSID1976, type="response")
+glm.pred=rep("no",753)
+glm.pred[glm.probs>.5]="yes"
+table(glm.pred,participation)
+mean(glm.pred==participation)
+```
+
+In the model, we can see the 4 of 5 variables are very significant, the p-value from smallest to largest is:
+
+*experience < age < youngkids < education < 0.001 < tax*. 
+
+We can see that the *tax* has the largest p-value, so we decide to delete tax:
+
+```{r}
+#the logistic regressions with Y(participation) and X(education,age,experience,youngkids):
+glm_4x = glm(as.factor(participation)~education+age+experience+youngkids, data = PSID1976, family = binomial)
+summary(glm_4x)
+
+glm.probs= predict(glm_4x, PSID1976, type="response")
+glm.pred=rep("no",753)
+glm.pred[glm.probs>.5]="yes"
+table(glm.pred,participation)
+mean(glm.pred==participation)
+```
+
+Now we can see that, after deleting *tax*,  all of the variables are significant, while the AIC value increases. The accurancy rate is  0.7383798.
+
+The p-value from smallest to largest is:
+
+*experience < age < youngkids < education < 0.001*. (The same as model glm_5x).
+
+We can also delete *education*, which has the largest p-value so far. 
+
+```{r}
+#the logistic regressions with Y(participation) and X(age,experience,youngkids):
+glm_3x = glm(as.factor(participation)~age+experience+youngkids, data = PSID1976, family = binomial)
+summary(glm_3x)
+
+glm.probs= predict(glm_3x, PSID1976, type="response")
+glm.pred=rep("no",753)
+glm.pred[glm.probs>.5]="yes"
+table(glm.pred,participation)
+mean(glm.pred==participation)
+```
+
+
+After deleting *education*, the AIC still increases, and all the three variables have very small p-values. The accurancy rate is  0.7144754.
+
+The p-value from smallest to largest is: *experience < age < youngkids*
+
+We can delete *youngkids*, the largest p-value so far.
+
+```{r}
+#the logistic regressions with Y(participation) and X(age,experience):
+glm_2x = glm(as.factor(participation)~age+experience, data = PSID1976, family = binomial)
+summary(glm_2x)
+
+glm.probs= predict(glm_2x, PSID1976, type="response")
+glm.pred=rep("no",753)
+glm.pred[glm.probs>.5]="yes"
+table(glm.pred,participation)
+mean(glm.pred==participation)
+```
+
+We can see that the AIC is still increasing. The accurancy rate is  0.6653386.
+
+So, now I would like to run the Logistic regressions for each of the variables separately, in the order of the p-value of in model glm_5x from smallest to largest (*experience < age < youngkids < education < 0.001 < tax*) :
+
+```{r}
+#the logistic regressions with Y(participation) and experience:
+glm_experience = glm(as.factor(participation)~experience, data = PSID1976, family = binomial)
+summary(glm_experience)
+
+glm.probs= predict(glm_experience, PSID1976, type="response")
+glm.pred=rep("no",753)
+glm.pred[glm.probs>.5]="yes"
+table(glm.pred,participation)
+mean(glm.pred==participation)
+```
+The accurancy rate is  0.6706507. 
+
+
+```{r}
+#the logistic regressions with Y(participation) and age:
+glm_age = glm(as.factor(participation)~age, data = PSID1976, family = binomial)
+summary(glm_age)
+
+glm.probs= predict(glm_age, PSID1976, type="response")
+glm.pred=rep("no",753)
+glm.pred[glm.probs>.5]="yes"
+table(glm.pred,participation)
+mean(glm.pred==participation)
+```
+
+The accurancy rate is  0.5710491.
+
+```{r}
+#the logistic regressions with Y(participation) and youngkids:
+glm_youngkids = glm(as.factor(participation)~youngkids, data = PSID1976, family = binomial)
+summary(glm_youngkids)
+
+glm.probs= predict(glm_youngkids, PSID1976, type="response")
+glm.pred=rep("no",753)
+glm.pred[glm.probs>.5]="yes"
+table(glm.pred,participation)
+mean(glm.pred==participation)
+```
+
+The accurancy rate is  0.622842.
+
+```{r}
+#the logistic regressions with Y(participation) and education:
+glm_education = glm(as.factor(participation)~education, data = PSID1976, family = binomial)
+summary(glm_education)
+
+glm.probs= predict(glm_education, PSID1976, type="response")
+glm.pred=rep("no",753)
+glm.pred[glm.probs>.5]="yes"
+table(glm.pred,participation)
+mean(glm.pred==participation)
+```
+
+The accurancy rate is  0.5909695.
+
+```{r}
+#the logistic regressions with Y(participation) and tax:
+glm_tax = glm(as.factor(participation)~tax, data = PSID1976, family = binomial)
+summary(glm_tax)
+
+glm.probs= predict(glm_tax, PSID1976, type="response")
+glm.pred=rep("no",753)
+glm.pred[glm.probs>.5]="yes"
+table(glm.pred,participation)
+mean(glm.pred==participation)
+```
+The accurancy rate is  0.5962815.
+
+By comparing the AIC of each variable and Y, we find that the AIC of *age* is highest, which is beyond our expectation. So we run another model by deleting *age* from our full model(glm_5x) to check if it is better if we delete the variable *age*:
+
+```{r}
+#the logistic regressions with Y(participation) and Xs(education,  tax, experience, youngkids):
+glm_no_age = glm(as.factor(participation)~education+tax+experience+youngkids, data = PSID1976, family = binomial)
+summary(glm_no_age)
+
+glm.probs= predict(glm_no_age, PSID1976, type="response")
+glm.pred=rep("no",753)
+glm.pred[glm.probs>.5]="yes"
+table(glm.pred,participation)
+mean(glm.pred==participation)
+```
+
+The accurancy rate is  0.690571.
+
+The AIC of this model is not higher than our full model, so we can keep the variable *age*.
+
+In conclusion, we ran 10 logistic regressions.
+
+For the first 9 models, their Xs and AIC are as follows:
+
+Xs variables in the models               AIC value      accurancy rate
+--------------------------------------   ------------   -----------------
+education+age+tax+experience+youngkids   AIC: 825.62;   0.7317397;
+education+age+experience+youngkids       AIC: 828.94;   0.7383798;
+age+experience+youngkids                 AIC: 850.65;   0.7144754;
+age+experience                           AIC: 904.7;    0.6653386;
+experience                               AIC: 935.2;    0.6706507;
+age                                      AIC: 1028.9;   0.5710491;
+youngkids                                AIC: 998.75;   0.622842;
+education                                AIC: 1006.7;   0.5909695;
+tax                                      AIC: 1017.6;   0.5962815;
+
+From the table above, We can see that the AIC is increasing as we delete the variables from our full model, which means the full model has the highest accuracy. Also, from the accurancy rate, we can see that the full modeln and the model without tax have the higest accurancy rate. Compared with AIC, we will choose the full model to analyze.
+
+We also compare the accuracy rates and AIC of each variable separately. While as we compare the accuracy rates of each variable, we find that the AIC of *age* is even unusually high. In the full model, the p-value of *age* is the second smallest, while in separate models, the AIC of *age* is the largest. To solve this, we run another model(glm_no_age) by deleting *age* from the full model. We can see that the AIC of model glm_no_age has an AIC of 891.03, which is still a rather high number. Also, in terms of the accurancy rate, the full model is good. So, we can keep *age* in our final model.
+
+In general, the relationships make sense, the more variables can generate a higher rate of accuracy.
+
+### Analysis and interpretation of our best regression model
+
+In this section, we will analyze our best model: 
+Y = *participation*
+X = *education, age, tax, experience, youngkids*
+
+```{r}
+summary(glm_5x)
+```
+
+From the intercepts of the model, we can see that the absolute value of coefficients of the *tax* and *youngkids* are the largest, while the p value of *tax* is very large, so *youngkids*will have the largest effect on Y. And the p-values of experience and age are the smallest, which means they are very significant.
+
+We can interpret the coefficients in this way:
+
+Holding other variables constant, if the *education* increases in one unit, which means the wife has one more year of education, the odds ratio of labor participation will increase at about 0.14 percent. 
+
+Holding other variables constant, if the *age* increases in one unit (one year), which means the wife is one year older, the odds ratio of labor participation will decrease at about 0.10 percent.
+
+Holding other variables constant, if the *tax* increases in one unit, which is the marginal tax rate facing the wife, the odds ratio of labor participation will decrease at about 2.6 percent.
+
+Holding other variables constant, if the *experience* increases in one unit, which means the actual years of wife’s previous labor market experience increase one year, the odds ratio of labor participation will increase at about 0.1257 percent..
+
+Holding other variables constant, if the *youngkids* increases in one unit, which means one more child less than 6 years old in the household, the odds ratio of labor participation will decrease at about 1.41 percent.
+
+
+According to the p-value of each variable, *education, age, experience, youngkids* have p-values lower than 0.001, so they are significantly different from zero, with confidence level larger than 99%.
+
+
+### The true positive and false positive rates of this logistic regressions model
+```{r}
+glm.probs= predict(glm_5x, PSID1976, type="response")
+glm.pred=rep("no",753)
+glm.pred[glm.probs>.5]="yes"
+table(glm.pred,participation)
+mean(glm.pred==participation)
+```
+```{r}
+true_positive = 343/(343+85)
+true_positive
+false_positive = 117/(117+208)
+false_positive
+```
+
+So, true_positive = 0.8014019, which means the model correctly predicts the positive class for 80.14019%.
+And false_positive = 0.36, which means the model incorrectly predicts the positive class for 36%.
+
+This regression has a fairly good to predict labor participation in 1976 on the factors *education, age, tax, experience*, and *youngkids*. 
+
+### Plot the estimated coefficients and their standard error.
+
+Now we plot the coefficients and their standard error in the model glm_5x:
+
+```{r}
+coefs = as.data.frame(summary(glm_5x)$coefficients[-1,1:2]) # -1 is to exclude the intercept
+names(coefs)[2] = "se" 
+coefs$vars = rownames(coefs)
+ggplot(coefs, aes(vars, Estimate)) + 
+geom_errorbar(aes(ymin=Estimate - 1.96*se, ymax=Estimate + 1.96*se), lwd=1, colour="red", width=0) +
+geom_errorbar(aes(ymin=Estimate - se, ymax=Estimate + se), lwd=1.5, colour="blue", width=0) +
+geom_point(size=2, pch=21, fill="yellow")+
+labs(title = "The coefficients and their standard error of model glm_5x ", x ="variables", y ="Estimate")
+```
+
+Since it is hard to see the first three variables, we plot variables from 1 to 3, *education, age, experience*, again.
+
+```{r}
+
+coefs = as.data.frame(summary(glm_5x)$coefficients[2:4,1:2]) # -1 is to exclude the intercept
+names(coefs)[2] = "se" 
+coefs$vars = rownames(coefs)
+ggplot(coefs, aes(vars, Estimate)) + 
+geom_errorbar(aes(ymin=Estimate - 1.96*se, ymax=Estimate + 1.96*se), lwd=1, colour="red", width=0) +
+geom_errorbar(aes(ymin=Estimate - se, ymax=Estimate + se), lwd=1.5, colour="blue", width=0) +
+geom_point(size=2, pch=21, fill="yellow")+
+labs(title = "The coefficients and their standard errors of education, age, experience in model glm_5x ", x ="variables", y ="Estimate")
+```
+
+
+We can see that the confidence interval of those variables does not contain 0. So, all the coefficients are significant.
+
+# Probit Classification 
+
+```{r}
+glm.fits=glm(as.factor(participation)~education+age+experience+tax+youngkids,data=PSID1976,family = binomial(link = "probit"))
+glm.probs=predict(glm.fits,PSID1976,type="response")
+glm.pred[glm.probs>.5]="yes"
+glm.pred[glm.probs<=.5]="no"
+table(glm.pred,PSID1976$participation)
+mean(glm.pred==PSID1976$participation)
+true_positive = 344/(344+116)
+true_positive
+false_positive = 84/(84+209)
+false_positive
+```
+
+The accuracy is 0.7343958 and the accuracy of the Logistic regression is 0.7317397, so it is slightly higher than Logistic regression. 
+
+And the true_positive is 0.7478261 and the true_positive of Logistic regression is 0.7456522. So it is also slightly higher than Logistic regression in terms of rate of true_positive. 
+
+In general, the accuracy of  Probit regression and Logistic regression are very close. Probit regression's accuracy rate is slightly higher than the Logistic regression's accuracy rate. 
+
+# KNN classification
+
+Firstly, we divide data to train and test subsets.
+```{r}
+#install.packages("caret")
+library(caret)
+is.factor(participation)
+set.seed(1) #set seed.
+index = createDataPartition(participation, p = 0.7, list = F )
+train = PSID1976[index,]
+test = PSID1976[-index,]
+```
+
+Then, we train our model on the training subset and choose the best K that minimizes the error rate in the test subset.
+```{r}
+numbers = 10
+repeats = 3
+tunel = 20 # try 30 different K's
+x = trainControl(method = "repeatedcv",
+                 number = numbers,
+                 repeats = repeats,
+                 classProbs = TRUE,
+                 summaryFunction = twoClassSummary)
+model1 = train(as.factor(participation)~education+age+experience+tax+youngkids, data = train, method = "knn",
+               preProcess = c("center","scale"),
+               trControl = x,
+               metric = "ROC",
+               tuneLength = tunel)
+# Summary of model
+model1
+```
+
+So, after predicting the results with on our entire data, we find the highest accuracy rate is 0.7869917 with k = 25.
+
+Compared to the result with the Logistic regression, whose accuracy rate is 0.7317397, the KNN classification has a higher accuracy rate.
+
+In general, KNN classification has the highest the highest accuracy rate, the Probit regression has the second highest accuracy rate, and the Logistic regressions has the lowest accuracy rate. However, their accuracy rates are vert close to each other, which is around 73% to 78%.
+
+
+
+# Ridge:
+
+
+If alpha = 0 then a ridge regression model is fit, and if alpha = 1 then a lasso model is fit. 
+Firstly, we will discuss the Ridge model:
+
+Tune the model: Use cross-validation to find the flexibly of the model (lamda)：
+
+```{r, warning=FALSE, message=FALSE}
+options(warn =-1)
+
+PSID1976$participation <- ifelse(PSID1976$participation=='yes',1,0)
+sum(is.na(PSID1976))# check missings
+library(class)
+library(glmnet)
+library(tidyverse)
+set.seed(233)
+index <- sample(1:nrow(PSID1976),round(0.7*nrow(PSID1976)))
+train <- as.data.frame(PSID1976[index,])
+test <- as.data.frame(PSID1976[-index,])
+
+
+x = model.matrix(participation~., PSID1976)[,-1] 
+y = PSID1976$participation
+
+x_train = model.matrix(participation~., train)[,-1] 
+y_train = train$participation
+
+x_test = model.matrix(participation~., test)[,-1] 
+y_test = test$participation
+grid = 10^seq(10, -2, length = 100)
+```
+
+```{r, warning=FALSE}
+ridge_mod = glmnet(x_train, y_train, alpha=0, lambda = grid)
+set.seed(1)
+cv.out_ridge = cv.glmnet(x_train, y_train, alpha = 0) # Fit ridge regression model on training data
+cv.out_ridge
+```
+
+We use cross-validation to tune the model. The min value, 0.03708, is the lambda, which is the one which minimizes out-of-sample loss in CV. The 1se value, 0.19789, is the lambda, which is the largest lambda within 1 standard error of the minimum lambda.
+
+The lamda which is within 1 standard error of the minimum lamda:
+
+```{r}
+seleclam_ridge = cv.out_ridge$lambda.1se  # Select lamda that minimizes training MSE, which also statisfy the within 1se of the min lambda 
+seleclam_ridge
+```
+
+
+We choose the lambda = 0.1978935, which is within 1 standard error of the minimum lambda as our best lambda.
+
+Plot of the cross-validation error and the chosen lamda:
+
+```{r}
+plot(cv.out_ridge)
+abline(v=log(seleclam_ridge), col = "blue")
+text(x= log(seleclam_ridge)+0.6, y=0.25, label="min MSE", cex=1)
+```
+
+We plot the MSE as a function of lambda. The number -1.7 on the top is the number of nonzero coefficient estimates.Confidence intervals represent error estimates for the loss metrics, which are the red dots. They are comupted using cross validation. The left vertical line shows the location of the minimum lambda and the right vertical line shows the location of the lambda which is within 1 standard error of the minimum lambda.
+
+
+Plot of how the coefficients vary with lamda in a graph:
+```{R}
+out_ridge = glmnet(x, y, alpha = 0) # Fit ridge regression model on the FULL dataset (train and test)
+
+plot(out_ridge, xvar = "lambda",label = T)
+```
+
+In this graph, we can see all coefficients converges to zero as lambada larger than 3. When lambda smaller than 1, the coefficients has some large change as shown above.
+
+
+ridge) The coefficients correspondent with the chosen lamda:
+```{r}
+predict(out_ridge, type = "coefficients", s = seleclam_ridge)
+ridge_pred = predict(ridge_mod, s = seleclam_ridge, newx = x_test)
+# calculate MSE for test dataset
+mean((ridge_pred - y_test)^2)
+```
+
+Report the Error Rate:
+```{r}
+#ridge model accuracy rate
+ridge_pred = predict(ridge_mod, s = seleclam_ridge, newx = x) 
+ridge.pre <- as.vector(ifelse(ridge_pred >=0.5, 1, 0))
+list1 <- ridge.pre== PSID1976$participation
+sum(ifelse(list1 ==T,1,0))/753 # accuracy rate
+1-sum(ifelse(list1 ==T,1,0))/753
+```
+
+We can see that the accuracy rate of ridge model is 0.9309429.
+
+# Lasso:
+
+Tune the model: Use cross-validation to find the flexibly of the model (lamda).
+
+```{r}
+lasso_mod = glmnet(x_train, y_train, alpha=1, lambda = grid)
+set.seed(1)
+cv.out_lasso = cv.glmnet(x_train, y_train, alpha = 1) # Fit ridge regression model on training data
+cv.out_lasso
+
+
+```
+
+We use cross-validation to tune the model. The min value, 0.01302, is the lambda, which is the one which minimizes out-of-sample loss in CV. The 1se value, 0.05769, is the lambda, which is the largest lambda within 1 standard error of the minimum lambda.
+
+The lamda which is within 1 standard error of the minimum lamda
+
+```{r}
+#log(bestlam)
+
+seleclam_lasso = cv.out_lasso$lambda.1se  # Select lamda that minimizes training MSE, which also statisfy the within 1se of the min lambda 
+seleclam_lasso
+```
+
+
+We choose the lambda = 0.05768699, which is within 1 standard error of the minimum lambda as our best lambda.
+
+Show the cross-validation error and the chosen lamda in a graph:
+
+```{r}
+plot(cv.out_lasso) # show cross-validation error and the chosen lambda in a graph
+abline(v=log(seleclam_lasso), col = "blue")
+text(x= log(seleclam_lasso)+0.6, y=0.25, label="min MSE", cex=1)
+```
+
+We also plot the MSE as a function of lambda. The numbers on the top are the numbers of nonzero coefficient
+estimates. Confidence intervals represent error estimates for the loss metrics, which are the red dots. They are comupted using cross validation. The left vertical line shows the location of the minimum lambda and the right vertical line shows the location of the lambda which is within 1 standard error of the minimum lambda.
+
+Show how the coefficients vary with lamda in a graph:
+```{R}
+out_lasso = glmnet(x, y, alpha = 1) # Fit ridge regression model on the FULL dataset (train and test)
+
+plot(out_lasso, xvar = "lambda",label = T)
+```
+
+Each colored line represents the value taken by a different coefficient in the model. As lambda grows, the
+regularization term has greater effect and there are fewer variables in the model because more and more
+coefficients will be 0.
+
+Report the coefficients correspondent with the chosen lamda:
+```{r}
+predict(out_lasso, type = "coefficients", s = seleclam_lasso)
+lasso_pred = predict(ridge_mod, s = seleclam_lasso, newx = x_test)
+# calculate MSE for test dataset
+mean((lasso_pred - y_test)^2)
+```
+
+
+
+ Report the Error Rate in the test subset:
+```{r}
+lasso_pred = predict(lasso_mod, s = seleclam_lasso, newx = x) 
+lasso.pre <- as.vector(ifelse(lasso_pred >=0.5, 1, 0))
+list1 <- lasso.pre== PSID1976$participation
+sum(ifelse(list1 ==T,1,0))/753 # accuracy rate
+1-sum(ifelse(list1 ==T,1,0))/753
+
+
+```
+
+We can see that the accuracy rate of lasso model is 0.9163347,
+
+
+Compare the result Error rate:
+
+Models                                   Accurancy rate     Error rate 
+-----------------------------------      --------------     ------------
+Probit regression                        0.7343958          0.2656042
+Logistic regressions                     0.7317397          0.2682603
+KNN classification(k=25)                 0.7869917          0.2130083
+Lasso                                    0.9163347          0.08366534
+Ridge                                    0.9309429          0.0690571
+
+For all the models above, we can see that the ridge and lasso have a much better accuracy rate than the models we used in report2 and the ridge model has the highest accurancy rate and lowest error rate.
+
+# Decision tree 
+
+Fit and plot a big tree
+```{r}
+train$participation <- as.factor(ifelse(train$participation ==1, "yes","no"))
+test$participation <- as.factor(ifelse(test$participation ==1, "yes","no"))
+tree1 = tree(participation~education+age+experience+tax+youngkids, train)
+summary(tree1)
+plot(tree1) #plot the tree
+text(tree1, pretty = 0)
+title("Participation in Tree")
+```
+
+Check the error rate  on the test subset:
+
+```{r}
+tree_full_pred = predict(tree1, test, type = "class")
+mean(tree_full_pred==y_test)
+error_rate_tree_full = 1- mean(tree_full_pred==y_test)
+error_rate_tree_full
+```
+
+The error rate of the full tree is 0.
+
+Use cross validation to prune your tree:
+
+```{r}
+cv.tree_full = cv.tree(tree1, FUN = prune.misclass)
+cv.tree_full
+```
+
+```{r}
+plot(cv.tree_full$size, cv.tree_full$dev, type = "b")
+```
+ 
+We see from this plot that the tree with 4 terminal nodes results in the lowest cross-validation error rate, with 164 cross-validation errors.
+
+We now apply the prune.misclass() function in order to prune the tree to obtain the nine-node tree by setting the parameter best = 4, we choose 4 becuase it is the simpliest tree:
+
+
+Plot the pruned tree:
+
+```{r}
+tree_prune = prune.misclass(tree1, best = 4)
+plot(tree_prune)
+text(tree_prune, pretty = 0)
+title("Participation Prediction in Prune Tree")
+```
+
+
+Interpret your tree (the selected variables and splits):
+
+If the experience is less than 5.5 years, the participation results would be no.
+For those who have experience larger than 5.5 years, if age is less than 46.5, the participation results would be yes. For those who have experience larger than 5.5 years and the age is larger than 46.5 and tax is larger than 0.6765, the participation results would be no.
+
+
+```{r}
+tree_prune_pred = predict(tree_prune, test, type = "class")
+mean(tree_prune_pred==y_test)
+error_rate_tree_prune = 1- mean(tree_prune_pred==y_test)
+error_rate_tree_prune
+
+```
+
+Models                                   Accurancy rate     Error rate 
+-----------------------------------      --------------     ------------
+Probit regression                        0.7343958          0.2656042
+Logistic regressions                     0.7317397          0.2682603
+KNN classification(k=25)                 0.7869917          0.2130083
+Lasso                                    0.9377778          0.0622222
+Ridge                                    0.9111111          0.0888889
+Full Tree                                0.6888889          0.3111111
+Prune Tree                               0.6622222          0.3377778
+
+As the chart shown above, the prediction error rate for the tree models are larger than other models, and the prune tree will also increase the error rate from the full tree. So the tree models dosen't perform well in this dataset.
+
+# Boot-strap
+
+Boot 100 trees. Report the test subseterror rate with this prediction
+
+```{r}
+
+arlist <- NA
+for (i in c(1:100)){
+set.seed(i)
+PSID_train = PSID1976 %>%
+  sample_frac(.7)
+
+PSID_test = PSID1976 %>%
+  setdiff(PSID_train)
+tree_PSID=tree(participation~., PSID_train)
+prune_PSID = prune.tree(tree_PSID, 
+                          best = 2)
+single_tree_estimate = predict(prune_PSID, 
+                               newdata = PSID_test)
+
+tree.pre <- ifelse(single_tree_estimate==1, "yes","no")
+
+list5 <- as.vector(tree.pre==test$participation)
+ar <- sum(ifelse(list5 ==T,1,0))/226 # accuracy rate
+
+arlist[i] <- ar
+}
+
+arlist 
+mean(arlist)
+```
+
+Compare the boot-strap aggregated model performance with the performance the single tree.
+The mean of the error rate of the boot-strap aggregated model is the same as the single tree, with a small std error of 0.02385018.
+
+The LASSO and Ridge models can largely decrease the error rate, and the tree models will increase the error rate. So, the LASSO and Ridge models are the best models so far to predict the participation of labor market in 1976.
+
+Split to train dataset and test dataset.
+The train dataset is for training and fitting, and we will use the test dataset to test the accuracy rate.
+
+# Bagging classification
+
+Bagging is simply a special case of a random forest with m = p. Therefore, the randomForest() function can be used to perform both random forests and bagging. We are going to set the number of variables $mtry$ to the number of all the characteristics in the PSID1976 data set.
+
+Plot the out-of-bag error rate as a function of number of trees 
+```{r}
+PSID1976$participation <- ifelse(PSID1976$participation=='yes',1,0)
+sum(is.na(PSID1976))# check missing
+set.seed(23)
+data_train = PSID1976 %>%
+  sample_frac(.8)
+data_test = PSID1976 %>%
+  setdiff(data_train)
+bag.data = randomForest(participation ~., data=data_train, 
+                          mtry=ncol(data_train)-1, 
+                          importance=TRUE) 
+bag.data
+```
+
+The argument mtry=ncol(boston_train)-1 = 20 indicates that all 20 predictors should be considered for each split of the tree.
+
+```{r}
+plot(bag.data, main = "The out-of-bag error rate as a function of number of trees")
+```
+
+In the plot, we can see the the out-of-bag error rate as a function of number of trees.  The error rate will largely increase at the begining and largely decrease. And as the number of trees is more than around 70, the error rate are almost the same and lower than 0.001.
+Plot predicted Y vs actual Y if you have a regression and error rate table if you have a classification
+
+```{r}
+yhat.bag = predict(bag.data, 
+                          newdata = data_test)
+
+yhat.bag[yhat.bag>.5]="yes"
+yhat.bag[yhat.bag<=.5]="no"
+table(yhat.bag,data_test$participation)
+```
+
+We can see from the error rate table that the model successfully predict all the data points in our data and the error rate is 0 and the accuracy rate is 1.
+
+Compare the error rate to that in Lasso/Ridge models in your last report:
+
+Models                                   Accurancy rate     Error rate 
+-----------------------------------      --------------     ------------
+Lasso                                    0.9377778          0.0622222
+Ridge                                    0.9111111          0.0888889
+Bagging classification                   1                  0
+
+By comparing with Lasso/Ridge models, we can see in the above chart that. the error rate of the Bagging classification is the smallest, which is equal to 0.  And then it is Lasso and Ridge. And all three models have very low error rates. The Bagging classification preform the best. 
+
+Plot the importance matrix:
+
+```{r}
+importance(bag.data)
+```
+
+Two measures of variable importance are reported. The former is based upon the mean decrease of accuracy in predictions on the out-of-bag samples when a given variable is excluded from the model. The latter is a measure of the total increase in node impurity that results from splits over that variable, averaged over all trees. If we drop the $hours$ variable, the mean decrease of accuracy in predictions on the
+out-of-bag samples will be 2.378246%. If we drop the $wage$ variable, the mean decrease of accuracy in predictions on the out-of-bag samples will be 2.260392%.
+
+```{r}
+varImpPlot(bag.data)
+```
+
+
+After visualize the importance matrix, the results indicate that across all of the trees considered in the bagging classificayion, the hours and the wages are by far the two most important variables.
+
+# Random Forest classification
+
+Growing a random forest proceeds in exactly the same way, except that we use a smaller value of the mtry argument, only a subset of variables are used at each split. By default, randomForest() uses p/3 variables when building a random forest of regression trees, and √p variables when building a random forest of classification trees. This helps de-correlate the trees.
+
+Plot the out-of-bag error rate as a function of number of predictors considered in each split
+
+Here we use mtry = 5
+
+```{r}
+set.seed(23)
+rf.data = randomForest(participation~., 
+                         data = data_train, 
+                         mtry = 5, 
+                         importance = TRUE,
+                         do.trace = 100)
+
+plot(rf.data, main = "The out-of-bag error rate as a function of number of trees")
+
+```
+
+In this plot of the error rate as a function of number of trees, we can see that the error rate decrease gradually and after the number of trees go after 150, the error rate stay at about 0.002.
+
+Use the out of bag error to tune the number of predictors in each split (mtry):
+
+Now, instead of using random number for the mtry around square root of the total number of variables, we need to find the best number of variables to use by estimating the Out Of Bag (OOB) error. I use hyperparameter tuning by looping over mtry and comparing the error rate for each value 
+
+```{r, warning=FALSE}
+oob.err<-double(20)
+test.err<-double(20)
+
+#mtry is no of Variables randomly chosen at each split
+for(mtry in 1:20) 
+{
+  rf=randomForest(participation~., 
+                         data = data_train,, mtry=mtry, ntree=400) 
+  oob.err[mtry] = rf$mse[400] #Error of all Trees fitted on training
+  
+  pred<-predict(rf,data_test) #Predictions on Test Set for each Tree
+  test.err[mtry]= with(data_test, mean( (participation - pred)^2)) # "Test" Mean Squared Error
+}
+```
+
+```{r}
+round(test.err ,2)
+round(oob.err,2)
+which.min(round(oob.err,2))
+```
+
+So, mtry = 3 would be the best mtry. We redo the random forest with mtry = 3.
+
+```{r}
+rf.data = randomForest(participation~., 
+                         data = data_train, 
+                         mtry = 3, 
+                         importance = TRUE,
+                         do.trace = 100)
+
+```
+
+Show the error rate table:
+
+```{r}
+yhat.rf = predict(rf.data, newdata = data_test)
+yhat.rf[yhat.rf>.5]="yes"
+yhat.rf[yhat.rf<=.5]="no"
+table(yhat.rf,data_test$participation)
+
+```
+
+We can see from the error rate table that the model successfully predict all the data points in our data and the error rate is 0 and the accuracy rate is 1.
+
+
+ Compare the  error ratein Lasso/Ridge models with other models
+
+Models                                   Accurancy rate     Error rate 
+-----------------------------------      --------------     ------------
+Lasso                                    0.9377778          0.0622222
+Ridge                                    0.9111111          0.0888889
+Bagging classification                   1                  0
+Random Forest classification             1                  0
+
+So the error rate of the Bagging classification and Random Forest classification are the smallest, both are 0.
+And then it is Lasso and Ridge. And all four models have very low error rates. The Bagging classification and Random Forest classification models perform the best.
+
+
+
+Plot the importance matrix:
+
+```{r}
+importance(rf.data)
+```
+
+Again, two measures of variable importance are reported. The former is based upon the mean decrease of accuracy in predictions on the out-of-bag samples when a given variable is excluded from the model. The latter is a measure of the total increase in node impurity that results from splits over that variable, averaged over all trees. If we drop the $hours$ variable, the mean decrease of accuracy in predictions on the out-of-bag samples will be 24.8796816%. If we drop the $wage$ variable, the mean decrease of accuracy in predictions on the out-of-bag samples will be 25.6533090%.
+```{r}
+varImpPlot(rf.data)
+```
+
+After visualize the importance matrix, the results indicate that across all of the trees considered in the bagging classificayion, the hours and the wages are still by far the two most important variables, and we can see the repwage is the third most important variable.
+
+
+Plot the test error and out-of-bag error in a same graph vs mtry and show that they follow a similar pattern:
+
+```{r}
+matplot(1:mtry , cbind(oob.err,test.err), pch=20 , col=c("red","blue"),type="b",ylab="Mean Squared Error",xlab="Number of Predictors Considered at each Split")
+legend("topright",legend=c("Out of Bag Error","Test Error"),pch=19, col=c("red","blue"))
+```
+
+By plotting these two error rates to visualize the best number of variables, we can see that the test error and out-of-bag error vs mtry are two lines exactly the same. So, they do follow a similar pattern.
+
+# Boosting classification
+
+In boosting, the trees are trained sequentially based on the reside of the previous step. Unlike random forests and bagging, boosting can overfit if the number of trees (B) is very large. An appropriate choice of B can be made using cross-validation. The number of splits d controls the tree complexity.
+
+
+Now we fit the boosting classification using the parameters in the lab.
+ Plot  error rate table if you have a classification: 
+```{r}
+boost.data = gbm(participation~., 
+                   data = data_train, 
+                   distribution = "bernoulli", 
+                   n.trees = 5000, 
+                   interaction.depth = 4)
+yhat.boost = predict(boost.data, 
+                         newdata = data_test, 
+                         n.trees = 5000)
+
+yhat.boost[yhat.boost>.5]="yes"
+yhat.boost[yhat.boost<=.5]="no"
+table(yhat.boost,data_test$participation)
+
+```
+
+We can see from the error rate table that the model successfully predict all the data points in our data and the error rate is 0 and the accuracy rate is 1.
+
+Compare the test error rateto  the Lasso/Ridge/Bagging/RandomForest models:
+
+Models                                   Accurancy rate     Error rate 
+-----------------------------------      --------------     ------------
+Lasso                                    0.9377778          0.0622222
+Ridge                                    0.9111111          0.0888889
+Bagging classification                   1                  0
+Random Forest classification             1                  0
+Boosting classification                  1                  0
+
+So the error rate of the Boosting classification, Bagging classification and Random Forest classification are the smallest, both are 0.
+And then it is Lasso and Ridge. And all five models have very low error rates.The Boosting classification, Bagging classification and Random Forest classification models perform the best.
+
+Plot the importance matrix:
+
+The summary() function produces a relative influence plot and also outputs the relative influence statistics:
+
+```{r}
+#summary(boost.data)
+```
+
+Again, we see that wage and hours are again the most important variables by far. We can also produce partial dependence plots for these two variables. 
+
+# XGboost classification
+
+XGBoost, or eXtreme Gradient Boosting, implements gradient boosting, but now includes a regularization parameter and implements parallel processing. It also has a built-in routine to handle missing values. XGBoost also allows one to use the model trained on the last iteration, and updates it when new data becomes available.
+
+We need to put our data into matrix format.
+
+```{r}
+
+train <- as.data.frame(PSID1976[index,])
+test <- as.data.frame(PSID1976[-index,])
+
+
+x = model.matrix(participation~., PSID1976)[,-1] 
+y = PSID1976$participation
+
+x_train = model.matrix(participation~., train)[,-1] 
+y_train = train$participation
+
+x_test = model.matrix(participation~., test)[,-1] 
+y_test = test$participation
+dtrain <- xgb.DMatrix(data = x_train, label = y_train)
+```
+
+
+```{r}
+data.xgb = xgboost(data=dtrain,
+                     max_depth=2,
+                     eta = 0.1,
+                     nrounds=40, # max number of boosting iterations (trees)
+                     lambda=0,
+                     print_every_n = 10,
+                     objective="binary:logistic") # for classification: objective = "binary:logistic"
+yhat.xgb <- predict(data.xgb,x_test)
+table(yhat.xgb,y_test)
+
+```
+
+We can see from the error rate table that the model successfully predict all the data points in our data and the error rate is 0 and the accuracy rate is 1.
+
+Compare the test  error rate to the Lasso/Ridge/Bagging/RandomForest/Boosting models
+
+Models                                   Accurancy rate     Error rate 
+-----------------------------------      --------------     ------------
+Lasso                                    0.9377778          0.0622222
+Ridge                                    0.9111111          0.0888889
+Bagging classification                   1                  0
+Random Forest classification             1                  0
+Boosting classification                  1                  0
+XGboost classification                   1                  0
+
+So the error rate of the Boosting classification, Bagging classification， XGboost classification and Random Forest classification are the smallest, both are 0.
+And then it is Lasso and Ridge. And all six models have very low error rates. And  Boosting classification, Bagging classification， XGboost classification and Random Forest classification perform the best.
+
+Plot the importance matrix
+
+```{r}
+importance <- xgb.importance(colnames(x_train),model=data.xgb)
+importance
+xgb.plot.importance(importance, rel_to_first=TRUE, xlab="Relative Importance")
+```
+
+In this plot, we can see that the $hours$ is the most important variable.
+
+# Tune parameters using grid search for the Boosting model 
+
+We will tuning parameters in Boosting (learning rate, number of trees,
+number of splits in each tree)
+
+
+```{r}
+# create hyperparameter grid
+hyper_grid <- expand.grid(
+shrinkage = c(0.01, 0.05, 0.1),
+interaction.depth = c(3, 4, 5))
+
+
+
+# grid search
+for(i in 1:nrow(hyper_grid)) {
+set.seed(233)
+# train model
+gbm.tune <- gbm(
+  formula = participation~., 
+  distribution = "bernoulli",
+  data = data_train,
+  n.trees = 5000,
+  interaction.depth = hyper_grid$interaction.depth[i],
+  shrinkage = hyper_grid$shrinkage[i],
+  train.fraction = 0.75,
+  verbose = FALSE
+  )
+
+# add min training error and trees to grid
+hyper_grid$optimal_trees[i] <- which.min(gbm.tune$valid.error)
+hyper_grid$min_error[i] <- min(gbm.tune$valid.error)
+}
+
+hyper_grid %>%
+dplyr::arrange(min_error) %>%
+head(5)
+```
+By runing a grid search, I find the best boosting model with  n.trees = 73, interaction.depth = 3, shrinkage = 0.1. 
+
+```{r}
+boost.data.ec = gbm(participation~., 
+                   data = data_train, 
+                   distribution = "bernoulli", 
+                   n.trees = 73, 
+                   shrinkage = 0.1,
+                   interaction.depth = 3)
+best_boost_pred = predict(boost.data.ec, data_test, n.trees=73)
+
+best_boost_pred[best_boost_pred>.5]="yes"
+best_boost_pred[best_boost_pred<=.5]="no"
+table(best_boost_pred,data_test$participation)
+```
+
+We can see from the error rate table that the model successfully predict all the data points in our data and the error rate is 0 and the accuracy rate is 1.
+
+ Compare the test MSE (error rate) to the
+Lasso/Ridge/Bagging/RandomForest/Boosting models
+
+Models                                   Accurancy rate     Error rate 
+-----------------------------------      --------------     ------------
+Lasso                                    0.9377778          0.0622222
+Ridge                                    0.9111111          0.0888889
+Bagging classification                   1                  0
+Random Forest classification             1                  0
+Boosting classification                  1                  0
+XGboost classification                   1                  0
+Boosting classification after tuning     1                  0
+
+Since the error rate for Boosting classification is 0, there is no space for improvement after tuning. Both of the models have the error rate of 0.
+So the error rate of the Boosting classification, Bagging classification，Boosting classification after tuning,  XGboost classification and Random Forest classification are the smallest, both are 0.
+And then it is Lasso and Ridge. And all  models have very low error rates.
+
+Plot the importance matrix
+
+```{r}
+#summary(boost.data.ec)
+```
+
+Again, we can see that the wage is the most important variable.
+
+Surprisingly, all of those models predict our dataset with 0 error rate, which makes it hard to analysis which one is the best among them. However, we can see that those models perform better than the models in our previous reports, such as Lasso, Ridge,Probit,Logistic，KNN.
+Also, we can see that the wages and hours all the most important variables in the dataset.
+
+
+# Neural Net 
+
+```{r}
+set.seed(233)
+train_nn = PSID1976 %>%
+  sample_frac(.7)
+test_nn = PSID1976 %>%
+  setdiff(train_nn)
+
+train_labels <- to_categorical(train_nn[,"participation"],2)
+train_data <- as.matrix(train_nn[!names(train_nn) %in% c("participation")])
+test_data <- as.matrix(test_nn[!names(train_nn) %in% c("participation")])
+test_labels <- to_categorical(test_nn[,"participation"],2)
+
+```
+
+```{r}
+model <- keras_model_sequential() %>%
+  layer_dense(units = 64, activation = "softmax",
+              input_shape = dim(train_data)[2]) %>%
+  layer_dense(units = 64, activation = "softmax") %>%
+  layer_dense(units = 2, activation= "softmax")
+
+model %>% compile(
+  loss = 'categorical_crossentropy',
+  optimizer = optimizer_rmsprop(),
+  metrics = c('accuracy')
+)
+
+```
+
+```{r}
+set.seed(277)
+early_stop <- callback_early_stopping(monitor = "val_loss", patience = 20)
+
+
+epochs=200
+history_class <- model %>% fit(
+  train_data,
+  train_labels,
+  epochs = epochs,
+  validation_split = 0.2,
+  callbacks = list(early_stop)
+)
+plot(history_class)
+```
+# (Extra Credit) KNN and SVM 
+# Comparing All Models 
+# Conclusion 
